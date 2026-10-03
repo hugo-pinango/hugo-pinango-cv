@@ -1,0 +1,326 @@
+/* Gafete colgante del header. Las posiciones las escribe LanyardBadge.tsx en cada cuadro. */
+
+.lanyard {
+  --card-w: 260px;
+  /* Una unidad de la cuadrícula de 260 × 396 en la que está dibujada la funda. */
+  --u: calc(var(--card-w) / 260);
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  perspective: 1400px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.lanyard.is-live {
+  opacity: 1;
+}
+
+/* ---------- Cordón ---------- */
+
+.lanyard__straps {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.lanyard__straps path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: calc(var(--card-w) * 0.075);
+}
+
+.lanyard__strap path {
+  stroke: #141416;
+}
+
+.lanyard__strap-core path {
+  stroke: #26262b;
+  stroke-width: calc(var(--card-w) * 0.075 - 5px);
+}
+
+.lanyard__strap-shadow {
+  transform: translate(calc(var(--card-w) * 0.07), calc(var(--card-w) * 0.05));
+  filter: blur(8px);
+  opacity: 0.2;
+}
+
+.lanyard__strap-shadow path {
+  stroke: #0d1233;
+}
+
+/* ---------- Tarjeta y su sombra ---------- */
+
+.lanyard__badge,
+.lanyard__shadow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--card-w);
+  height: calc(var(--card-w) * 396 / 260);
+  /* Gira alrededor de la ranura de la que cuelga. */
+  transform-origin: 50% calc(var(--u) * 16);
+  will-change: transform;
+}
+
+.lanyard__shadow {
+  border-radius: calc(var(--u) * 16);
+  background: #0d1233;
+  filter: blur(calc(var(--card-w) * 0.07));
+  opacity: 0.3;
+}
+
+.lanyard__badge {
+  font-size: calc(var(--card-w) / 26);
+  color: var(--ink);
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.lanyard.is-grabbing .lanyard__badge {
+  cursor: grabbing;
+}
+
+.badge__sleeve {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.badge__paper {
+  position: absolute;
+  inset: 3.8em 1.1em 1.1em;
+  display: flex;
+  flex-direction: column;
+  padding: 1.2em 1.2em 1.15em;
+  border-radius: 0.7em;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px rgb(20 24 44 / 0.05),
+    0 0.1em 0.3em rgb(20 24 44 / 0.08);
+}
+
+.badge__id {
+  display: flex;
+  gap: 1.1em;
+}
+
+.badge__photo {
+  flex: none;
+  width: 11.2em;
+  height: 14em;
+  overflow: hidden;
+  border-radius: 0.6em;
+  background: linear-gradient(165deg, #dce3ff, #eef1ff);
+}
+
+/* El fondo blanco de la foto se funde con el panel de color. */
+.badge__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 20%;
+  mix-blend-mode: multiply;
+  -webkit-user-drag: none;
+}
+
+.badge__facts {
+  min-width: 0;
+  font-family: var(--font-mono);
+}
+
+.badge__mark {
+  display: block;
+  font-size: 1.7em;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.08em;
+  color: var(--blue);
+}
+
+.badge__facts dl {
+  display: grid;
+  gap: 0.85em;
+  margin: 1.4em 0 0;
+}
+
+.badge__facts dt {
+  font-size: 0.7em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.badge__facts dd {
+  margin: 0.15em 0 0;
+  font-family: var(--font-body);
+  font-size: 1.1em;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+}
+
+.badge__name {
+  margin: 0.22em 0 0;
+  font-family: var(--font-display);
+  font-size: 4.5em;
+  font-weight: 500;
+  line-height: 0.84;
+  letter-spacing: -0.035em;
+}
+
+.badge__name span {
+  display: block;
+}
+
+.badge__name span:last-child {
+  color: var(--blue);
+}
+
+.badge__role {
+  margin: 0.8em 0 0;
+  font-size: 1.18em;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+}
+
+.badge__now {
+  margin-top: auto;
+  padding-top: 0.85em;
+  border-top: 1px solid var(--line);
+}
+
+.badge__now > span {
+  font-family: var(--font-display);
+  font-size: 1.02em;
+  font-style: italic;
+  color: var(--ink-3);
+}
+
+.badge__now > p {
+  margin: 0.1em 0 0;
+  font-size: 1.02em;
+}
+
+.badge__now ul {
+  display: flex;
+  gap: 0.4em;
+  margin: 0.65em 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.badge__now li {
+  padding: 0.22em 0.7em;
+  border-radius: 99em;
+  background: var(--ink);
+  font-size: 0.82em;
+  font-weight: 600;
+  color: #fff;
+}
+
+.badge__now li:nth-child(2) {
+  background: var(--blue);
+}
+
+.badge__now li:nth-child(3) {
+  background: #f4b89c;
+  color: var(--ink);
+}
+
+/* Brillo del plástico: se desplaza con el giro de la tarjeta. */
+.badge__gloss {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--u) * 16);
+  background: linear-gradient(
+    112deg,
+    rgb(255 255 255 / 0) 36%,
+    rgb(255 255 255 / 0.2) 45%,
+    rgb(255 255 255 / 0) 52%,
+    rgb(255 255 255 / 0) 64%,
+    rgb(255 255 255 / 0.1) 70%,
+    rgb(255 255 255 / 0) 76%
+  );
+  background-size: 260% 100%;
+  background-position: calc(var(--sheen, 0.5) * 100%) 0;
+  pointer-events: none;
+}
+
+/* ---------- Mosquetón ---------- */
+
+.lanyard__clip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.lanyard__clip svg {
+  position: absolute;
+  top: calc(var(--u) * -86);
+  left: calc(var(--u) * -14);
+  width: calc(var(--u) * 28);
+  height: calc(var(--u) * 96);
+  overflow: visible;
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.28));
+}
+
+/* ---------- Pista ---------- */
+
+.lanyard__hint {
+  position: absolute;
+  top: var(--hint-y, 50%);
+  left: var(--hint-x, 60%);
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--ink-3);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.lanyard.is-live .lanyard__hint {
+  opacity: 1;
+  transition-delay: 2.6s;
+}
+
+.lanyard.is-touched .lanyard__hint {
+  opacity: 0;
+  transition-delay: 0s;
+}
+
+.lanyard__hint svg {
+  width: 2.9em;
+  height: 1.9em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lanyard--hint-below .lanyard__hint {
+  transform: translateX(-50%);
+}
+
+.lanyard--hint-below .lanyard__hint svg {
+  display: none;
+}

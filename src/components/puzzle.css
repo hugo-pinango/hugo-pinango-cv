@@ -1,0 +1,327 @@
+/* Rompecabezas de áreas. Las posiciones y medidas las calcula SkillPuzzle.tsx. */
+
+/* Caja que envuelve al tablero. Con .is-fit ocupa el alto que sobra en la sección (ver index.astro). */
+.pz-fit {
+  width: 100%;
+}
+
+.pz-fit.is-fit {
+  flex: 1;
+  min-height: 0;
+}
+
+.pz {
+  position: relative;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ---------- Color: cada área trae su gradiente en --grad ---------- */
+
+/* Tinta clara u oscura según lo que se lea mejor sobre el gradiente. */
+.pz-ink-light {
+  --pz-ink: #fff;
+  --pz-soft: rgb(255 255 255 / 0.86);
+  --pz-faint: rgb(255 255 255 / 0.66);
+  --pz-glass: rgb(255 255 255 / 0.17);
+  --pz-glass-line: rgb(255 255 255 / 0.24);
+  --pz-shadow: 0 1px 2px rgb(12 14 48 / 0.3);
+}
+
+.pz-ink-dark {
+  --pz-ink: #04130c;
+  --pz-soft: rgb(4 19 12 / 0.82);
+  --pz-faint: rgb(4 19 12 / 0.62);
+  --pz-glass: rgb(255 255 255 / 0.4);
+  --pz-glass-line: rgb(255 255 255 / 0.3);
+  --pz-shadow: none;
+}
+
+/* ---------- Tablero: contorno de los huecos ---------- */
+
+.pz__slots {
+  position: absolute;
+  pointer-events: none;
+}
+
+.pz__slots path {
+  fill: rgb(12 12 13 / 0.016);
+  stroke: #dbd8cd;
+  stroke-width: 1.2;
+}
+
+/* ---------- Piezas ---------- */
+
+.pz-piece {
+  position: absolute;
+  /* Solo la forma de la pieza recibe el puntero, no su caja rectangular. */
+  pointer-events: none;
+  will-change: transform;
+}
+
+.pz--animated .pz-piece {
+  transition: transform 0.72s var(--spring);
+}
+
+.pz--animated .pz-piece.is-dragging {
+  transition: none;
+}
+
+.pz-piece:focus-visible {
+  outline: none;
+}
+
+.pz-piece:focus-visible .pz-piece__face {
+  stroke: #fff;
+  stroke-width: 3;
+}
+
+.pz-piece__shape {
+  position: absolute;
+  pointer-events: none;
+  filter: drop-shadow(0 16px 20px rgb(22 24 60 / 0.26));
+  transition: filter 0.5s ease;
+}
+
+.pz-piece.is-placed .pz-piece__shape {
+  filter: drop-shadow(0 2px 3px rgb(22 24 60 / 0.16));
+}
+
+.pz-piece.is-dragging .pz-piece__shape {
+  filter: drop-shadow(0 28px 32px rgb(22 24 60 / 0.32));
+}
+
+.pz-piece__edge-shade {
+  fill: rgb(0 0 0 / 0.36);
+}
+
+.pz-piece__face {
+  cursor: grab;
+  pointer-events: auto;
+  /* En táctil el gesto vertical sigue desplazando la página. */
+  touch-action: pan-y;
+}
+
+.pz-piece.is-dragging .pz-piece__face {
+  cursor: grabbing;
+}
+
+.pz-piece__content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+/* ---------- Contenido (compartido con las tarjetas sin JS) ---------- */
+
+.pz-piece__content,
+.pz-card {
+  color: var(--pz-ink);
+  text-shadow: var(--pz-shadow);
+}
+
+.pz-piece__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+}
+
+.pz-piece__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.6em;
+  height: 2.6em;
+  border: 1px solid var(--pz-glass-line);
+  border-radius: 0.85em;
+  background: var(--pz-glass);
+}
+
+.pz-piece__icon svg {
+  font-size: 1.4em;
+}
+
+.pz-piece__index {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.68em;
+  letter-spacing: 0.14em;
+  color: var(--pz-faint);
+}
+
+.pz-piece__head h3 {
+  margin: 0.05em 0 0;
+  font-size: 1.6em;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* El detalle aparece cuando la pieza encaja. */
+.pz-piece__body {
+  margin-top: 0.95em;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.pz-piece.is-placed .pz-piece__body,
+.pz-card .pz-piece__body {
+  opacity: 1;
+  transform: none;
+}
+
+.pz-piece.is-placed .pz-piece__body {
+  transition-duration: 0.5s;
+  transition-delay: 0.32s;
+}
+
+.pz-piece__claim {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.08em;
+  font-style: italic;
+  line-height: 1.25;
+}
+
+.pz-piece__summary {
+  margin: 0.45em 0 0;
+  font-size: 0.9em;
+  line-height: 1.45;
+  color: var(--pz-soft);
+  text-wrap: pretty;
+}
+
+/* Con poco alto se prescinde de la descripción: quedan el título, la frase y las tecnologías. */
+.pz--compact .pz-piece__summary {
+  display: none;
+}
+
+.pz-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
+  margin: 0.85em 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pz-chips li {
+  padding: 0.24em 0.7em;
+  border: 1px solid var(--pz-glass-line);
+  border-radius: 99em;
+  background: var(--pz-glass);
+  font-size: 0.74em;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+/* ---------- Estado y controles ---------- */
+
+.pz.is-complete {
+  animation: pz-settle 0.6s ease 0.55s;
+}
+
+@keyframes pz-settle {
+  40% {
+    transform: scale(1.012);
+  }
+}
+
+.pz-controls {
+  position: relative;
+  /* Por encima de las piezas sueltas: el botón siempre se puede pulsar. */
+  z-index: 200;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem 1.4rem;
+  padding: 0 var(--gutter);
+}
+
+.pz-controls p {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+}
+
+.pz-dots {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.pz-dots i {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--grad);
+  opacity: 0.28;
+  transition: opacity 0.3s ease;
+}
+
+.pz-dots i.is-on {
+  opacity: 1;
+}
+
+.pz-controls button {
+  padding: 0.5rem 1.15rem;
+  border: 1px solid var(--ink);
+  border-radius: 99rem;
+  background: var(--paper);
+  font-size: 0.86rem;
+  font-weight: 550;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.pz-controls button:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---------- Sin JS (y antes de hidratar): tarjetas planas ---------- */
+
+.pz-static {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: 1.1rem;
+  max-width: 54rem;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* Con JS la cuadrícula solo reserva el espacio hasta que aparece el rompecabezas. */
+.js .pz-static {
+  visibility: hidden;
+}
+
+.pz-card {
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: var(--grad);
+  box-shadow: 0 5px 0 rgb(0 0 0 / 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pz--animated .pz-piece,
+  .pz-piece__shape,
+  .pz-piece__body {
+    transition: none;
+  }
+
+  .pz.is-complete {
+    animation: none;
+  }
+}

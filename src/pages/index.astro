@@ -1,0 +1,239 @@
+---
+import { getImage } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import LanyardBadge from '../components/LanyardBadge.tsx';
+import SkillPuzzle from '../components/SkillPuzzle.tsx';
+import StoryBook from '../components/StoryBook.tsx';
+import portrait from '../assets/hugo-retrato.webp';
+import { book, contact, jobs, principles, profile, skillAreas } from '../data/cv';
+
+const fullName = `${profile.firstName} ${profile.lastName}`;
+const badgePhoto = await getImage({ src: portrait, width: 480, format: 'webp', quality: 84 });
+---
+
+<Base
+  title={`${fullName} — ${profile.role}`}
+  description={`${profile.role}. ${profile.lede} Frontend, backend, despliegue y apps móviles.`}
+>
+  <main>
+    <section class="hero screen" id="inicio">
+      <div class="hero__top">
+        <p>
+          <strong>{profile.role}.</strong>{' '}{profile.lede}{' '}<a href="#piezas">[más]</a>
+        </p>
+        <p>{profile.now}</p>
+      </div>
+
+      <LanyardBadge
+        client:load
+        photo={badgePhoto.src}
+        firstName={profile.firstName}
+        lastName={profile.lastName}
+        role={profile.role}
+        now={profile.nowShort}
+        tags={profile.badgeTags}
+      />
+
+      <div class="hero__name">
+        <h1>{fullName}</h1>
+      </div>
+    </section>
+
+    <section class="pieces screen" id="piezas">
+      <div class="section-head">
+        <p class="eyebrow">Lo que aporto</p>
+        <h2>Las piezas que encajan en tu equipo.</h2>
+        <p>
+          Cuatro áreas que, juntas, cubren un producto de punta a punta. Arrastra las piezas o deja que se armen solas.
+        </p>
+      </div>
+      <SkillPuzzle client:idle areas={skillAreas} />
+    </section>
+
+    <section class="story screen" id="libro">
+      <div class="story__head">
+        <h2 class="sr-only">{book.title.join(' ')}</h2>
+        <p class="eyebrow" aria-hidden="true">Experiencia laboral · Habilidades · Contacto</p>
+      </div>
+      <StoryBook
+        client:idle
+        photo={badgePhoto.src}
+        profile={profile}
+        contact={contact}
+        skillAreas={skillAreas}
+        jobs={jobs}
+        principles={principles}
+        book={book}
+      />
+      <footer class="footer">
+        <p>© {new Date().getFullYear()} {fullName}</p>
+        <p>Hecho con Astro y React</p>
+        <a href="#inicio">Volver arriba ↑</a>
+      </footer>
+    </section>
+  </main>
+</Base>
+
+<script>
+  import '../scripts/section-scroll';
+</script>
+
+<style>
+  .hero {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 100svh;
+    /* Solo se recorta a los lados: el gafete puede pasar por encima de la sección siguiente. */
+    overflow-x: clip;
+  }
+
+  .hero__top {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: clamp(1.5rem, 9vh, 5.5rem) var(--gutter) 0;
+    font-family: var(--font-display);
+    font-size: clamp(0.82rem, 0.6rem + 0.62vw, 1.15rem);
+    line-height: 1.28;
+    font-variation-settings: 'SOFT' 50, 'WONK' 0;
+  }
+
+  .hero__top p {
+    margin: 0;
+    max-width: 17em;
+  }
+
+  .hero__top p:last-child {
+    text-align: right;
+  }
+
+  .hero__top strong {
+    font-weight: 600;
+  }
+
+  .hero__top a {
+    color: var(--ink-3);
+    text-underline-offset: 0.18em;
+    transition: color 0.2s ease;
+  }
+
+  .hero__top a:hover {
+    color: var(--blue);
+  }
+
+  /* El nombre ocupa todo el ancho y el borde inferior le corta los descendentes. */
+  .hero__name {
+    overflow: clip;
+  }
+
+  .hero__name h1 {
+    margin: 0 0 -0.03em;
+    font-size: 18.6vw;
+    /* Tamaño óptico fijo: con el automático las letras se ensanchan en pantallas pequeñas y el nombre no cabe. */
+    font-variation-settings: 'opsz' 144, 'SOFT' 30, 'WONK' 0;
+    line-height: 0.9;
+    letter-spacing: -0.035em;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .pieces {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(4rem, 10vw, 7rem) 0 clamp(3rem, 8vw, 5rem);
+    /* Las piezas dispersas pueden asomar por los lados: que no ensanchen la página. */
+    overflow-x: clip;
+  }
+
+  .story {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: clip;
+    padding: clamp(3rem, 7vw, 5rem) 0 0;
+    background: linear-gradient(#eaeef4, #dfe5ee);
+  }
+
+  .story__head {
+    flex: none;
+    padding: 0 var(--gutter);
+    text-align: center;
+  }
+
+  .footer {
+    display: flex;
+    flex: none;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.2rem 2rem;
+    padding: clamp(0.6rem, 1.8svh, 1.1rem) var(--gutter);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+  }
+
+  .footer p {
+    margin: 0;
+  }
+
+  .footer a {
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .footer a:hover {
+    color: var(--blue);
+  }
+
+  @media (max-width: 700px) {
+    .hero__top {
+      gap: 0;
+    }
+
+    .hero__top p {
+      max-width: 34%;
+    }
+
+    .footer {
+      justify-content: center;
+    }
+  }
+</style>
+
+<!--
+  Una pantalla por sección. Van como globales porque dependen de la clase .is-fit, que ponen las
+  islas de React cuando su contenido cabe en el alto de la ventana (esos nodos no llevan el
+  atributo de ámbito de Astro).
+-->
+<style is:global>
+  .pieces:has(.pz-fit.is-fit) {
+    height: 100svh;
+    padding: clamp(1.1rem, 3.4svh, 2.6rem) 0 clamp(0.9rem, 2.4svh, 1.6rem);
+  }
+
+  /* Con el alto justo, el encabezado se compacta para dejarle sitio al tablero. */
+  .pieces:has(.pz-fit.is-fit) .section-head {
+    max-width: 62rem;
+  }
+
+  .pieces:has(.pz-fit.is-fit) .section-head h2 {
+    margin-top: 0.35rem;
+    font-size: clamp(1.55rem, 4.4svh, 2.6rem);
+  }
+
+  .pieces:has(.pz-fit.is-fit) .section-head p:not(.eyebrow) {
+    max-width: none;
+    margin-top: 0.45rem;
+    font-size: clamp(0.84rem, 1.85svh, 1rem);
+  }
+
+  .story:has(.book-stage.is-fit) {
+    height: 100svh;
+    padding-top: clamp(0.9rem, 2.6svh, 1.9rem);
+  }
+</style>

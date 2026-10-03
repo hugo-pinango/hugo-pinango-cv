@@ -1,0 +1,953 @@
+/* Libro 3D. StoryBook.tsx decide qué hojas están pasadas; aquí vive toda la animación. */
+
+/* Registradas como número para poder animarlas: --turn va de 0 (sin pasar) a 1 (pasada). */
+@property --turn {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --peek {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+.book-stage {
+  --page-w: min(400px, 100vw - 3rem, 53svh);
+  --ratio: 1.38;
+  --page-h: calc(var(--page-w) * var(--ratio));
+  --over: 0.5em;
+  --gap: 2.4px;
+  --page-bg: #fbf8f1;
+  --cover: #2536d8;
+  --cover-deep: #1a279f;
+  --ease-flip: cubic-bezier(0.4, 0.1, 0.2, 1);
+
+  position: relative;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  /* Deja asomar el título de fondo por encima del libro. */
+  padding: clamp(2.5rem, 7vw, 6rem) 0 0;
+  outline: none;
+}
+
+/* Ajustado a la pantalla: ocupa el alto que sobra en la sección y el libro se mide para caber dentro. */
+.book-stage.is-fit {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding-top: 0;
+}
+
+.book-stage:focus-visible .book-scene {
+  outline: 2px solid var(--blue);
+  outline-offset: 1.4rem;
+  border-radius: 1.2rem;
+}
+
+/* Título gigante y desenfocado detrás del libro. */
+.book-backdrop {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  margin: 0;
+  font-size: clamp(4.2rem, min(17vw, 27svh), 16.5rem);
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+  color: var(--blue);
+  filter: blur(clamp(4px, 0.75vw, 11px));
+  opacity: 0.9;
+  transform: translateX(-50%);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---------- Escena 3D ---------- */
+
+/* Hueco del libro. El relleno inferior es el sitio de su sombra. */
+.book-area {
+  padding-bottom: 2.3rem;
+}
+
+.book-stage.is-fit .book-area {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 0;
+}
+
+.book-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.75rem, 2.4vw, 2.25rem);
+}
+
+.book-scene {
+  position: relative;
+  /* Del tamaño del libro: el anillo de foco lo rodea a él y no a toda la franja. */
+  flex: none;
+  width: max-content;
+  perspective: 2400px;
+  perspective-origin: 50% 30%;
+  animation: book-float 7s ease-in-out infinite;
+}
+
+@keyframes book-float {
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.book-tilt {
+  transform: rotateX(var(--rx, 13deg)) rotateY(var(--ry, -3deg));
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.book {
+  position: relative;
+  width: calc(var(--page-w) * 2);
+  height: var(--page-h);
+  font-size: calc(var(--page-w) / 26);
+  color: var(--ink);
+  transform: translateX(var(--shift, 0px));
+  transform-style: preserve-3d;
+  transition: transform var(--flip-ms) var(--ease-flip);
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Cerrado, el libro ocupa solo la mitad derecha: se desplaza para quedar centrado. */
+.book-stage--spread.is-closed .book {
+  --shift: calc(var(--page-w) / -2);
+}
+
+.book-stage--single .book {
+  width: var(--page-w);
+  font-size: calc(var(--page-w) / 24.5);
+}
+
+.book-shadow {
+  position: absolute;
+  bottom: -9%;
+  left: 50%;
+  width: calc(var(--page-w) * 2.05);
+  height: 15%;
+  background: radial-gradient(closest-side, rgb(18 26 64 / 0.4), transparent);
+  filter: blur(14px);
+  transform: translateX(-50%);
+  transition: width var(--flip-ms) var(--ease-flip);
+}
+
+.book-stage.is-closed .book-shadow,
+.book-stage--single .book-shadow {
+  width: calc(var(--page-w) * 1.1);
+}
+
+/* ---------- Hojas ---------- */
+
+.leaf {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--page-w);
+  height: 100%;
+  cursor: pointer;
+  transform-origin: 0 50%;
+  /* translateZ va después del giro: las hojas quedan apiladas en orden a ambos lados del lomo. */
+  transform: rotateY(calc(var(--turn) * -180deg - var(--peek) * 15deg)) translateZ(calc(var(--i) * var(--gap) * -1));
+  transform-style: preserve-3d;
+  transition:
+    --turn var(--flip-ms) var(--ease-flip) var(--delay, 0ms),
+    --peek 0.45s ease;
+}
+
+.book-stage--single .leaf {
+  left: 0;
+  /* A una página, la hoja pasada sale de escena. */
+  opacity: clamp(0, (1 - var(--turn)) * 3.4, 1);
+}
+
+/* La hoja de arriba se levanta un poco al pasar el cursor: invita a pasarla. */
+@media (hover: hover) {
+  .leaf--next:hover {
+    --peek: 0.45;
+  }
+
+  .leaf--prev:hover {
+    --peek: -0.45;
+  }
+
+  .is-closed .leaf--next:hover {
+    --peek: 1;
+  }
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 0.2em 0.8em 0.8em 0.2em;
+  background-color: var(--page-bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .3 0 0 0 0 .2 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Girada sobre sí misma: su borde izquierdo es el exterior y el derecho, el lomo. */
+.face--back {
+  border-radius: 0.8em 0.2em 0.2em 0.8em;
+  transform: rotateY(180deg);
+}
+
+/* Sombra del lomo. */
+.face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgb(40 30 10 / 0.2), rgb(40 30 10 / 0.06) 4%, transparent 13%);
+  pointer-events: none;
+}
+
+.face--back::after {
+  background: linear-gradient(to left, rgb(40 30 10 / 0.2), rgb(40 30 10 / 0.06) 4%, transparent 13%);
+}
+
+/* Oscurece la hoja mientras gira: máximo a mitad de camino. */
+.face::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: linear-gradient(to right, rgb(20 16 8 / 0.5), rgb(20 16 8 / 0.12));
+  opacity: calc(var(--turn) * (1 - var(--turn)) * 1.5);
+  pointer-events: none;
+}
+
+.face--back::before {
+  background: linear-gradient(to left, rgb(20 16 8 / 0.5), rgb(20 16 8 / 0.12));
+}
+
+/* Tapas: algo más grandes que las hojas. */
+.leaf--cover .face,
+.book__board {
+  top: calc(var(--over) * -1);
+  bottom: calc(var(--over) * -1);
+  border-radius: 0.25em 0.95em 0.95em 0.25em;
+}
+
+.leaf--cover .face {
+  right: calc(var(--over) * -1);
+}
+
+.leaf--cover .face--back {
+  border-radius: 0.95em 0.25em 0.25em 0.95em;
+}
+
+/* Por dentro, las dos tapas muestran la guarda con el reborde de tela. */
+.book__board,
+.leaf--cover .face--back .pg {
+  box-shadow: inset 0 0 0 0.24em var(--cover-deep);
+}
+
+.leaf--cover .face--back .pg {
+  border-radius: inherit;
+}
+
+.book__board {
+  position: absolute;
+  left: 50%;
+  width: calc(var(--page-w) + var(--over));
+  background: color-mix(in srgb, var(--blue) 6%, var(--page-bg));
+  transform: translateZ(calc(var(--count) * var(--gap) * -1 - 1px));
+}
+
+.book-stage--single .book__board {
+  left: 0;
+}
+
+/* ---------- Portada ---------- */
+
+.pg-cover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 3.4em 2.8em 2.6em 3.6em;
+  background:
+    linear-gradient(to right, rgb(0 0 0 / 0.28), rgb(0 0 0 / 0) 5.5%, rgb(255 255 255 / 0.1) 6.5%, rgb(0 0 0 / 0) 8.5%),
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.025) 0 1px, transparent 1px 3px),
+    linear-gradient(150deg, #3145ee, var(--cover) 45%, var(--cover-deep));
+  color: #f6f1e4;
+}
+
+/* Filete interior, como en una encuadernación en tela. */
+.pg-cover::before {
+  content: '';
+  position: absolute;
+  inset: 1.3em 1.3em 1.3em 2.3em;
+  border: 1px solid rgb(246 241 228 / 0.42);
+  border-radius: 0.35em;
+  pointer-events: none;
+}
+
+.pg-cover__mark {
+  font-family: var(--font-mono);
+  font-size: 1.5em;
+  font-weight: 600;
+  letter-spacing: -0.08em;
+  color: #f8c7ac;
+}
+
+.pg-cover h3 {
+  margin: auto 0 0;
+  font-size: 3.55em;
+  font-variation-settings: 'SOFT' 60, 'WONK' 0;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+}
+
+.pg-cover h3 span {
+  display: block;
+}
+
+.pg-cover h3 span:last-child {
+  font-style: italic;
+  font-weight: 400;
+  color: #f8c7ac;
+}
+
+.pg-cover__rule {
+  display: block;
+  width: 3.2em;
+  height: 2px;
+  margin: 1.9em 0 1.4em;
+  background: #f8c7ac;
+}
+
+.pg-cover p {
+  margin: 0;
+}
+
+.pg-cover__author {
+  font-family: var(--font-display);
+  font-size: 1.4em;
+}
+
+.pg-cover__role,
+.pg-cover__edition {
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.78;
+}
+
+.pg-cover__role {
+  margin-top: 0.5em;
+}
+
+.pg-cover__edition {
+  margin-top: auto;
+  padding-top: 2.4em;
+}
+
+/* ---------- Páginas ---------- */
+
+.pg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 2.1em 2.2em 3em 2.8em;
+}
+
+.face--back .pg {
+  padding: 2.1em 2.8em 3em 2.2em;
+}
+
+.pg-head {
+  margin: 0 0 1.9em;
+  font-family: var(--font-mono);
+  font-size: 0.62em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.face--back .pg-head {
+  text-align: left;
+}
+
+.face--front .pg-head {
+  text-align: right;
+}
+
+.pg-kicker {
+  margin: 0 0 0.5em;
+  font-family: var(--font-mono);
+  font-size: 0.66em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.pg-kicker b {
+  margin-left: 0.6em;
+  padding: 0.15em 0.6em;
+  border-radius: 99em;
+  background: var(--blue);
+  font-weight: 500;
+  color: #fff;
+}
+
+.pg-title {
+  margin: 0;
+  font-size: 2.55em;
+  font-variation-settings: 'SOFT' 60, 'WONK' 0;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.pg-title--xl {
+  font-size: 3.2em;
+  line-height: 0.96;
+}
+
+.pg-title em {
+  font-weight: 400;
+  color: var(--blue);
+}
+
+.pg-lede {
+  margin: 0.45em 0 0;
+  font-family: var(--font-display);
+  font-size: 1.08em;
+  font-style: italic;
+  line-height: 1.25;
+  color: var(--ink-2);
+}
+
+.pg-role {
+  margin: 0.7em 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.64em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.pg-text {
+  margin: 0.95em 0 0;
+  font-size: 0.9em;
+  line-height: 1.52;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.pg-label {
+  margin: 1.25em 0 0.55em;
+  font-family: var(--font-mono);
+  font-size: 0.62em;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.pg-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.34em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pg-tags li {
+  padding: 0.22em 0.72em;
+  border: 1px solid rgb(12 12 13 / 0.16);
+  border-radius: 99em;
+  font-size: 0.72em;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.pg-tags--solid li {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--page-bg);
+}
+
+.pg-tags--bottom {
+  margin-top: auto;
+  padding-top: 1.2em;
+}
+
+.pg-list {
+  display: grid;
+  gap: 0.42em;
+  margin: 1.1em 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.86em;
+  line-height: 1.42;
+}
+
+.pg-label + .pg-list {
+  margin-top: 0;
+}
+
+.pg-list li {
+  position: relative;
+  padding-left: 1.25em;
+  text-wrap: pretty;
+}
+
+.pg-list li::before {
+  content: '';
+  position: absolute;
+  top: 0.68em;
+  left: 0;
+  width: 0.62em;
+  height: 1.5px;
+  background: var(--blue);
+}
+
+.pg-num {
+  position: absolute;
+  bottom: 1.5em;
+  font-family: var(--font-display);
+  font-size: 0.8em;
+  font-style: italic;
+  color: var(--ink-3);
+}
+
+.face--front .pg-num {
+  right: 2.75em;
+}
+
+.face--back .pg-num {
+  left: 2.75em;
+}
+
+/* Índice */
+
+.pg--toc {
+  background: linear-gradient(rgb(43 63 242 / 0.055), rgb(43 63 242 / 0.055));
+}
+
+.pg-toc {
+  margin-top: 1.25em;
+}
+
+.pg-toc h4 {
+  margin: 0 0 0.3em;
+  font-family: var(--font-mono);
+  font-size: 0.64em;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.pg-toc ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pg-toc button {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+  width: 100%;
+  padding: 0.24em 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-display);
+  font-size: 1.02em;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.pg-toc button:hover {
+  color: var(--blue);
+}
+
+.pg-toc button i {
+  flex: 1;
+  border-bottom: 1px dotted rgb(12 12 13 / 0.35);
+  transform: translateY(-0.2em);
+}
+
+.pg-toc button span:last-child {
+  font-size: 0.86em;
+  font-style: italic;
+  color: var(--ink-3);
+}
+
+/* Prólogo */
+
+.pg-photo {
+  position: absolute;
+  top: 3.6em;
+  right: 2.3em;
+  width: 8.6em;
+  margin: 0;
+  padding: 0.45em 0.45em 1.5em;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px rgb(12 12 13 / 0.05),
+    0 0.5em 1.1em rgb(40 30 10 / 0.2);
+  transform: rotate(4deg);
+}
+
+.pg-photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 4.6;
+  object-fit: cover;
+  object-position: 50% 18%;
+  filter: saturate(0.92);
+}
+
+/* Cinta adhesiva. */
+.pg-photo::before {
+  content: '';
+  position: absolute;
+  top: -0.6em;
+  left: 50%;
+  width: 3.6em;
+  height: 1.25em;
+  background: rgb(248 199 172 / 0.78);
+  transform: translateX(-50%) rotate(-5deg);
+}
+
+.pg-photo + .pg-title {
+  margin-top: 3.2em;
+}
+
+.pg-sign {
+  margin: 1.4em 0 0;
+  font-family: var(--font-display);
+  font-size: 1.05em;
+  font-style: italic;
+  color: var(--ink-2);
+}
+
+/* Cómo trabajo */
+
+.pg-principles {
+  display: grid;
+  gap: 1.05em;
+  margin: 1.5em 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: principle;
+}
+
+.pg-principles li {
+  position: relative;
+  padding-left: 2.3em;
+  counter-increment: principle;
+}
+
+.pg-principles li::before {
+  content: counter(principle, decimal-leading-zero);
+  position: absolute;
+  top: 0.35em;
+  left: 0;
+  font-family: var(--font-mono);
+  font-size: 0.66em;
+  letter-spacing: 0.08em;
+  color: var(--blue);
+}
+
+.pg-principles b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.16em;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.pg-principles span {
+  display: block;
+  margin-top: 0.15em;
+  font-size: 0.86em;
+  line-height: 1.42;
+  color: var(--ink-2);
+}
+
+/* Notas: renglones vacíos */
+
+.pg--notes {
+  background: repeating-linear-gradient(transparent 0 2.05em, rgb(43 63 242 / 0.13) 2.05em calc(2.05em + 1px)) 0 5.2em / 100%
+    calc(100% - 9em) no-repeat;
+}
+
+/* Contacto */
+
+.pg--contact .pg-title {
+  margin-top: 0.6em;
+}
+
+.pg-contact {
+  display: grid;
+  gap: 0.2em;
+  margin: 1.3em 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pg-contact a,
+.pg-contact div {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  padding: 0.5em 0.55em;
+  margin: 0 -0.55em;
+  border-radius: 0.7em;
+  font-size: 0.96em;
+  font-weight: 500;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  transition: background 0.2s ease;
+}
+
+.pg-contact a:hover {
+  background: rgb(43 63 242 / 0.08);
+}
+
+.pg-contact svg {
+  flex: none;
+  box-sizing: content-box;
+  padding: 0.45em;
+  border-radius: 0.6em;
+  background: rgb(43 63 242 / 0.1);
+  font-size: 1.15em;
+  color: var(--blue);
+}
+
+.pg-contact small {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.64em;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.pg-cta {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 0.62em 1.25em;
+  border-radius: 99em;
+  background: var(--blue);
+  font-size: 0.95em;
+  font-weight: 550;
+  text-decoration: none;
+  color: #fff;
+  transition: transform 0.25s var(--spring);
+}
+
+.pg-cta:hover {
+  transform: translateY(-2px) scale(1.03);
+}
+
+.pg-cta span {
+  display: inline-block;
+  margin-left: 0.25em;
+}
+
+/* ---------- Controles ---------- */
+
+.book-meta {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: clamp(0.4rem, 1.6svh, 1.4rem);
+  padding: 0 1rem;
+}
+
+.book-status {
+  display: grid;
+  flex: 1;
+  justify-items: center;
+  gap: clamp(0.35rem, 1.1svh, 0.7rem);
+  min-width: 0;
+  max-width: 24rem;
+}
+
+.book-caption {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.2em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.book-progress {
+  display: flex;
+  justify-content: center;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.book-progress button {
+  flex: 0 1 1.5rem;
+  min-width: 0;
+  height: 1.1rem;
+  padding: 0;
+  border: 0;
+  background: linear-gradient(rgb(12 12 13 / 0.18), rgb(12 12 13 / 0.18)) center / 100% 3px no-repeat;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.book-progress button.is-read {
+  background-image: linear-gradient(rgb(43 63 242 / 0.45), rgb(43 63 242 / 0.45));
+}
+
+.book-progress button.is-current {
+  background-image: linear-gradient(var(--blue), var(--blue));
+}
+
+
+.book-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  text-align: center;
+  color: var(--ink-3);
+}
+
+/* A una página la pista puede ocupar dos líneas: se reserva el alto para que el libro no cambie de tamaño al abrirlo. */
+.book-stage--single .book-hint {
+  min-height: 2.5em;
+}
+
+/* En ventanas bajas ese alto es mejor dárselo al libro: las flechas ya están a la vista. */
+@media (max-height: 779px) {
+  .book-stage--spread.is-fit .book-hint {
+    display: none;
+  }
+}
+
+.book-nav {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: 1px solid rgb(12 12 13 / 0.14);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.6);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.25s var(--spring),
+    opacity 0.2s ease;
+}
+
+.book-nav:hover:not(:disabled) {
+  background: #fff;
+  transform: scale(1.08);
+}
+
+.book-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Con el libro cerrado, la flecha de avanzar llama la atención. */
+.is-closed .book-nav--next {
+  animation: book-nudge 1.8s ease-in-out infinite;
+}
+
+@keyframes book-nudge {
+  50% {
+    transform: translateX(5px);
+  }
+}
+
+/* Antes de hidratar, en pantallas estrechas ya se reserva el alto de la vista a una página. */
+@media (max-width: 859px) {
+  .book-stage {
+    --ratio: 1.56;
+  }
+}
+
+/* ---------- Sin JS: las páginas se leen una debajo de otra ---------- */
+
+.no-js .book-scene {
+  perspective: none;
+  animation: none;
+}
+
+.no-js .book-tilt,
+.no-js .book,
+.no-js .leaf,
+.no-js .face {
+  position: static;
+  width: auto;
+  height: auto;
+  transform: none;
+  opacity: 1;
+}
+
+.no-js .book {
+  display: grid;
+  gap: 1rem;
+  width: min(26rem, 100vw - 2rem);
+  font-size: 1rem;
+}
+
+.no-js .leaf {
+  display: grid;
+  gap: 1rem;
+}
+
+.no-js .face {
+  position: relative;
+  min-height: 34rem;
+  border-radius: 0.8rem;
+}
+
+.no-js .book__board,
+.no-js .book-shadow,
+.no-js .book-meta,
+.no-js .book-nav,
+.no-js .face--blank {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-scene,
+  .is-closed .book-nav--next {
+    animation: none;
+  }
+
+  .book-stage {
+    --flip-ms: 1ms !important;
+  }
+
+  .book-tilt {
+    transition: none;
+  }
+}

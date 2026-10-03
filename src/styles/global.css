@@ -1,0 +1,135 @@
+:root {
+  --paper: #fbfaf6;
+  --ink: #0c0c0d;
+  --ink-2: #3f3f46;
+  --ink-3: #7b7b85;
+  --line: #e6e3da;
+  --blue: #2b3ff2;
+
+  --font-display: 'Fraunces Variable', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-body: 'Geist Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --gutter: clamp(1.25rem, 5vw, 4.5rem);
+  /* Rebote suave para todo lo que "encaja" en su sitio. */
+  --spring: cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* El scroll se detiene en cada sección. En pantallas pequeñas solo si queda cerca. */
+  scroll-snap-type: y proximity;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Cada sección ocupa al menos una pantalla. */
+.screen {
+  min-height: 100svh;
+  scroll-snap-align: start;
+}
+
+/* En pantallas grandes cada sección mide una pantalla exacta (ver index.astro) y el scroll siempre encaja, centrándola. */
+@media (min-width: 820px) and (min-height: 600px) {
+  html.js {
+    scroll-snap-type: y mandatory;
+  }
+
+  .screen {
+    scroll-snap-align: center;
+  }
+}
+
+body {
+  margin: 0;
+  overflow-x: clip;
+  background: var(--paper);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--blue);
+  color: #fff;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Encabezado común de las secciones. */
+.section-head {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.section-head h2 {
+  margin: 0.7rem 0 0;
+  font-size: clamp(1.9rem, 4.2vw, 3.1rem);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.section-head p:not(.eyebrow) {
+  margin: 1rem auto 0;
+  max-width: 34rem;
+  font-size: 1.02rem;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
